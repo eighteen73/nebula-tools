@@ -1,6 +1,16 @@
 {
     "name": "eighteen73/nebula-tools",
     "description": "A library of tools for Nebula WordPress websites.",
+    "authors": [
+        {
+            "name": "Ed Jeavons",
+            "email": "ed@orphans.co.uk"
+        },
+        {
+            "name": "Brett Mason",
+            "email": "brett@orphans.co.uk"
+        }
+    ],
     "type": "library",
     "license": "MIT",
     "autoload": {
