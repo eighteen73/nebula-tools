@@ -63,18 +63,7 @@ class Editor {
 		$this->write_dotenv_value( 'DB_USER', $db_user );
 		$this->write_dotenv_value( 'DB_PASSWORD', $db_password );
 
-		$this->write_dotenv_value( 'AUTH_KEY', $this->random_key() );
-		$this->write_dotenv_value( 'SECURE_AUTH_KEY', $this->random_key() );
-		$this->write_dotenv_value( 'LOGGED_IN_KEY', $this->random_key() );
-		$this->write_dotenv_value( 'NONCE_KEY', $this->random_key() );
-		$this->write_dotenv_value( 'AUTH_SALT', $this->random_key() );
-		$this->write_dotenv_value( 'SECURE_AUTH_SALT', $this->random_key() );
-		$this->write_dotenv_value( 'LOGGED_IN_SALT', $this->random_key() );
-		$this->write_dotenv_value( 'NONCE_SALT', $this->random_key() );
-	}
-
-	protected function random_key() {
-		return bin2hex( random_bytes( 32 ) );
+		$this->get_keys();
 	}
 
 	/**
@@ -100,9 +89,17 @@ class Editor {
 		return $hostnames;
 	}
 
+	protected function get_keys() {
+		$keys_raw = file_get_contents( 'https://nebula-keys.eighteen73.co.uk/?json=true' );
+		$keys     = json_decode( $keys_raw );
+		foreach ( $keys as $key ) {
+			$this->write_dotenv_value( $key[0], $key[1] );
+		}
+	}
+
 	protected function write_dotenv_value( $key, $value ) {
-		$pattern     = "/({$key}=)\n/";
-		$replacement = "{$key}={$value}\n";
+		$pattern     = "/({$key}=['\"]*)\n/";
+		$replacement = "{$key}=\"{$value}\"\n";
 		file_put_contents( '.env', preg_replace( $pattern, $replacement, file_get_contents( '.env' ) ) );
 	}
 }
