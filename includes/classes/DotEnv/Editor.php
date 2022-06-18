@@ -42,7 +42,7 @@ class Editor {
 		} while ( ! $app_hostname );
 
 		$io->write( '' );
-		$ssl     = $io->askConfirmation( "Use https:// ? [no]: ", false );
+		$ssl     = $io->askConfirmation( "Use https:// ? [yes]: ", true );
 		$wp_home = $ssl ? "https://{$app_hostname}" : "http://{$app_hostname}";
 		$io->write( '' );
 
