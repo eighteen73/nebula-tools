@@ -1,5 +1,5 @@
 # Nebula Tools
 
-This package is only suitable for inclusion within [Nebula](https://github.com/eighteen73/nebula) websites. 
+This package provides tools for WordPress websites running [Nebula](https://github.com/eighteen73/nebula) and is only suitable for inclusion within that framework. 
 
-It provides install scripts and a library of tools for WordPress website running that framework. 
+At the moment it provides an installation script that is run after project creation to assist with website initial configuration, but it is likely that other useful tools will be added later. 
