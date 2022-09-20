@@ -130,7 +130,8 @@ class Editor {
 		$keys_raw = file_get_contents( 'https://nebula-keys.eighteen73.co.uk/?json=true' );
 		$keys     = json_decode( $keys_raw );
 		foreach ( $keys as $key ) {
-			$this->write_dotenv_value( $key[0], $key[1] );
+			// Don't treat $ in keys as $n replacements
+			$this->write_dotenv_value( $key[0], str_replace('$', '\$', $key[1]) );
 		}
 	}
 
