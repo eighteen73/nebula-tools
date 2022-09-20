@@ -131,7 +131,7 @@ class Editor {
 		$keys     = json_decode( $keys_raw );
 		foreach ( $keys as $key ) {
 			// Don't treat $ in keys as $n replacements
-			$this->write_dotenv_value( $key[0], str_replace('$', '\$', $key[1]) );
+			$this->write_dotenv_value( $key[0], str_replace( '$', '\$', $key[1] ) );
 		}
 	}
 
