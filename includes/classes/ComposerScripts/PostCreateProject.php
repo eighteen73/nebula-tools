@@ -29,6 +29,8 @@ class PostCreateProject {
 		$composer = $event->getComposer();
 		$io       = $event->getIO();
 
+		self::add_composer_lock_to_repo();
+
 		$dotenv_editor = new Editor();
 		$dotenv_editor->make_dotenv();
 		$dotenv_editor->populate_dotenv( $io );
@@ -38,6 +40,21 @@ class PostCreateProject {
 		$io->write( '' );
 		$io->write( 'Thank you for installing Nebula!' );
 		$io->write( '' );
+	}
+
+	/**
+	 * Update Nebula's .gitignore so the resulting project includes the composer.lock file. This file was deliberately
+	 * excluded within Nebula itself.
+	 *
+	 * @return void
+	 */
+	private static function add_composer_lock_to_repo() {
+		if ( ! file_exists( '.gitignore' ) ) {
+			return;
+		}
+		$content = file_get_contents( '.gitignore' );
+		$content = str_replace( "/composer.lock\n", '', $content );
+		file_put_contents( '.gitignore', $content );
 	}
 
 	/**
