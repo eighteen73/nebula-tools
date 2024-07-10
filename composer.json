@@ -1,40 +1,42 @@
 {
-    "name": "eighteen73/nebula-tools",
-    "description": "A library of tools for Nebula WordPress websites.",
-    "authors": [
-        {
-            "name": "Ed Jeavons",
-            "email": "ed@orphans.co.uk"
-        },
-        {
-            "name": "Brett Mason",
-            "email": "brett@orphans.co.uk"
-        }
-    ],
-    "type": "library",
-    "license": "MIT",
-    "autoload": {
-        "files": ["includes/hardened-passwords.php"],
-        "psr-4": {
-            "Eighteen73\\NebulaTools\\": "includes/classes/"
-        }
+  "name": "eighteen73/nebula-tools",
+  "description": "A library of tools for Nebula WordPress websites.",
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Ed Jeavons",
+      "email": "ed@orphans.co.uk"
     },
-    "minimum-stability": "stable",
-    "require": {
-        "php": ">=7.4",
-        "ext-json": "*"
-    },
-    "require-dev": {
-        "eighteen73/phpcs-composer": "^v1.0"
-    },
-    "config": {
-        "allow-plugins": {
-            "dealerdirect/phpcodesniffer-composer-installer": true
-        }
-    },
-    "scripts": {
-        "test": [
-            "phpcs"
-        ]
+    {
+      "name": "Brett Mason",
+      "email": "brett@orphans.co.uk"
     }
+  ],
+  "minimum-stability": "stable",
+  "require": {
+    "php": ">=8.0",
+    "ext-json": "*"
+  },
+  "require-dev": {
+		"eighteen73/wordpress-coding-standards": "^2.0.0"
+  },
+  "config": {
+    "allow-plugins": {
+      "dealerdirect/phpcodesniffer-composer-installer": true
+    }
+  },
+  "autoload": {
+    "files": [
+      "includes/hardened-passwords.php"
+    ],
+    "psr-4": {
+      "Eighteen73\\NebulaTools\\": "includes/classes/"
+    }
+  },
+  "scripts": {
+    "test": [
+      "phpcs"
+    ]
+  }
 }
