@@ -82,8 +82,20 @@ class Editor {
 			$db_password = $io->ask( 'Database password: ' );
 		} while ( ! $db_password );
 
+		// Use localhost as a preference but switch to 127.0.0.1 if necessary
+		foreach ( [ 'localhost', '127.0.0.1' ] as $db_host ) {
+			try {
+				new \PDO( "mysql:dbname={$db_name};host={$db_host}", $db_user, $db_password, [ \PDO::ATTR_TIMEOUT => 1 ] );
+				break;
+			} catch ( \PDOException ) {
+				// Fail silently so the user can set their own special config manually in it's a niche setup
+				$db_host = 'localhost';
+			}
+		}
+
 		// Write settings to file
 		$this->write_dotenv_value( 'WP_HOME', $wp_home );
+		$this->write_dotenv_value( 'DB_HOST', $db_host );
 		$this->write_dotenv_value( 'DB_NAME', $db_name );
 		$this->write_dotenv_value( 'DB_USER', $db_user );
 		$this->write_dotenv_value( 'DB_PASSWORD', $db_password );
