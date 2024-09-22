@@ -35,7 +35,7 @@ class PostCreateProject {
 		$dotenv_editor->make_dotenv();
 		$dotenv_editor->populate_dotenv( $io );
 
-		self::check_database( $io );
+		self::reset_database( $io );
 
 		$io->write( '' );
 		$io->write( 'Thank you for installing Nebula!' );
@@ -52,87 +52,56 @@ class PostCreateProject {
 		if ( ! file_exists( '.gitignore' ) ) {
 			return;
 		}
-		$content = file_get_contents( '.gitignore' );
+		$content = file_get_contents( '.gitignore' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- runs outside of WordPress
 		$content = str_replace( "/composer.lock\n", '', $content );
-		file_put_contents( '.gitignore', $content );
+		file_put_contents( '.gitignore', $content ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- runs outside of WordPress
 	}
 
 	/**
-	 * Verify the .env file's database settings
+	 * The database connection was verified in populate_dotenv() so here we only need
+	 * to check that it's empty for a fresh install.
 	 *
 	 * @param ConsoleIO $io Composer's console
 	 * @return void
 	 */
-	private static function check_database( ConsoleIO $io ) {
-		$can_connect    = false;
-		$has_database   = false;
-		$empty_database = false;
+	private static function reset_database( ConsoleIO $io ) {
+		$dotenv = Dotenv::createImmutable( getcwd() );
+		$dotenv->load();
 
-		// Test for database
+		$db_host = $_ENV['DB_HOST'] ?? 'localhost';
+		$dbh     = new \PDO( "mysql:host={$db_host};dbname={$_ENV['DB_NAME']}", $_ENV['DB_USER'], $_ENV['DB_PASSWORD'] ); // phpcs:ignore WordPress.DB.RestrictedClasses.mysql__PDO -- runs outside of WordPress
+
+		$database_is_empty = false;
 		do {
-			$dotenv = Dotenv::createImmutable( getcwd() );
-			$dotenv->load();
-
-			$db_host = $_ENV['DB_HOST'] ?? 'localhost';
-
-			/**
-			 * Test for connection
-			 */
-
-			$dsn = "mysql:host={$db_host}";
-			try {
-				$dbh         = new PDO( $dsn, $_ENV['DB_USER'], $_ENV['DB_PASSWORD'] );
-				$can_connect = true;
-			} catch ( PDOException $e ) {
-				$io->write( '' );
-				$io->ask( 'Can\'t connect to database engine. Please correct the .env file then hit ENTER.' );
-				continue;
-			}
-
-			/**
-			 * Test for database
-			 */
-
-			$dsn .= ";dbname={$_ENV['DB_NAME']}";
-			try {
-				$dbh          = new PDO( $dsn, $_ENV['DB_USER'], $_ENV['DB_PASSWORD'] );
-				$has_database = true;
-			} catch ( PDOException $e ) {
-				$io->write( '' );
-				$io->write( 'The database does not exist.' );
-				$io->write( "We can create \"{$_ENV['DB_NAME']}\" now or you can set it up (changing .env if necessary) then retry." );
-				$io->write( '' );
-				$action = $io->select(
-					'What should we do? [0]',
-					[
-						'Create database',
-						'Retry',
-					],
-					'0'
-				);
-				if ( $action === '0' ) {
-					// Create database and allow to loop
-					$dbh->exec( "CREATE DATABASE `{$_ENV['DB_NAME']}`" );
-					continue;
-				}
-			}
-
-			/**
-			 * Test for empty database
-			 */
-
 			$query  = $dbh->query( 'SHOW TABLES' );
 			$tables = $query->fetchAll( PDO::FETCH_COLUMN );
-			if ( ! empty( $tables ) ) {
-				$io->write( '' );
-				$io->write( "Database \"{$_ENV['DB_NAME']}\" is not empty." );
-				$io->write( 'Please wipe it manually or enter an alternative DB_NAME into .env then retry.' );
-				$io->write( '' );
-				$io->ask( "When you're ready hit ENTER" );
-				continue;
+			if ( empty( $tables ) ) {
+				$database_is_empty;
+				break;
 			}
-			$empty_database = true;
 
-		} while ( ! $can_connect || ! $has_database || ! $empty_database );
+			$io->write( '' );
+			$io->write( "Database \"{$_ENV['DB_NAME']}\" is not empty." );
+			$io->write( 'We can delete all tables now or you can wipe it manually then select retry.' );
+			$io->write( '' );
+			$action = $io->select(
+				'What should we do? [0]',
+				[
+					'Delete all tables automatically (THERE WILL BE DATA LOSS!)',
+					'Retry',
+				],
+				'0'
+			);
+
+			if ( $action === '0' ) {
+
+				$drop_queries = $dbh->query( "SELECT concat('DROP TABLE IF EXISTS `', table_name, '`;') FROM information_schema.tables WHERE table_schema = '{$_ENV['DB_NAME']}'" );
+				$dbh->query( 'SET FOREIGN_KEY_CHECKS = 0' );
+				foreach ( $drop_queries as $drop_query ) {
+					$dbh->query( $drop_query[0] );
+				}
+				$dbh->query( 'SET FOREIGN_KEY_CHECKS = 1' );
+			}
+		} while ( ! $database_is_empty );
 	}
 }
