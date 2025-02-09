@@ -68,8 +68,18 @@ class PostCreateProject {
 		$dotenv = Dotenv::createImmutable( getcwd() );
 		$dotenv->load();
 
-		$db_host = $_ENV['DB_HOST'] ?? 'localhost';
-		$dbh     = new \PDO( "mysql:host={$db_host};dbname={$_ENV['DB_NAME']}", $_ENV['DB_USER'], $_ENV['DB_PASSWORD'] ); // phpcs:ignore WordPress.DB.RestrictedClasses.mysql__PDO -- runs outside of WordPress
+		// Use localhost as a preference but switch to 127.0.0.1 if necessary (some dev. environments aren't configured for a localhost socket)
+		// This could be an interactive input in the future but that would be an unnecessary step a the moment.
+		$db_hosts_to_try = [ $_ENV['DB_HOST'], 'localhost', '127.0.0.1' ];
+		foreach ( $db_hosts_to_try as $db_host ) {
+			try {
+				$connection = $_ENV['DB_NAME'] ? "mysql:host={$db_host};dbname={$_ENV['DB_NAME']}" : "mysql:host={$db_host}";
+				$dbh        = new \PDO( $connection, $_ENV['DB_USER'], $_ENV['DB_PASSWORD'], [ \PDO::ATTR_TIMEOUT => 1 ] ); // phpcs:ignore WordPress.DB.RestrictedClasses.mysql__PDO -- runs outside of WordPress
+				break;
+			} catch ( \PDOException ) {
+				continue;
+			}
+		}
 
 		$database_is_empty = false;
 		do {

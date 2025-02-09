@@ -19,7 +19,7 @@
     "ext-json": "*"
   },
   "require-dev": {
-		"eighteen73/wordpress-coding-standards": "^2.0.0"
+    "eighteen73/wordpress-coding-standards": "^2.0.0"
   },
   "config": {
     "allow-plugins": {
