@@ -136,7 +136,7 @@ class MUPlugins {
 	 * This sets the cache or calls for an update
 	 */
 	private function check_cache() {
-		$cache = get_site_option( 'bedrock_autoloader' );
+		$cache = get_site_option( 'nebula_autoloader' );
 
 		if ( $cache === false || ( isset( $cache['plugins'], $cache['count'] ) && count( $cache['plugins'] ) !== $cache['count'] ) ) {
 			$this->update_cache();
@@ -164,7 +164,7 @@ class MUPlugins {
 			'count'   => $this->count_plugins(),
 		];
 
-		update_site_option( 'bedrock_autoloader', $this->cache );
+		update_site_option( 'nebula_autoloader', $this->cache );
 	}
 
 	/**
