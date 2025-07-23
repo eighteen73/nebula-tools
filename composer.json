@@ -27,9 +27,6 @@
     }
   },
   "autoload": {
-    "files": [
-      "includes/hardened-passwords.php"
-    ],
     "psr-4": {
       "Eighteen73\\NebulaTools\\": "includes/classes/"
     }
