@@ -18,37 +18,37 @@ class MUPlugins {
 	/**
 	 * Singleton instance
 	 *
-	 * @var static
+	 * @var self
 	 */
-	private static MUPlugins $instance;
+	private static self $instance;
 
 	/**
 	 * Store Autoloader cache and site option
 	 *
 	 * @var array
 	 */
-	private array $cache;
+	private array $cache = [];
 
 	/**
 	 * Autoloaded plugins
 	 *
 	 * @var array
 	 */
-	private array $auto_plugins;
+	private array $auto_plugins = [];
 
 	/**
 	 * Autoloaded mu-plugins
 	 *
 	 * @var array
 	 */
-	private array $mu_plugins;
+	private array $mu_plugins = [];
 
 	/**
 	 * Number of plugins
 	 *
-	 * @var int
+	 * @var int|null
 	 */
-	private int $count = 0;
+	private ?int $count = null;
 
 	/**
 	 * Newly activated plugins
@@ -91,12 +91,9 @@ class MUPlugins {
 		$this->validate_plugins();
 		$this->count_plugins();
 
-		array_map(
-			static function () {
-				include_once WPMU_PLUGIN_DIR . '/' . func_get_args()[0];
-			},
-			array_keys( $this->cache['plugins'] )
-		);
+		foreach ( array_keys( $this->cache['plugins'] ) as $plugin_file ) {
+			include_once WPMU_PLUGIN_DIR . '/' . $plugin_file;
+		}
 
 		add_action( 'plugins_loaded', [ $this, 'plugin_hooks' ], -9999 );
 	}
@@ -138,12 +135,21 @@ class MUPlugins {
 	private function check_cache() {
 		$cache = get_site_option( 'nebula_autoloader' );
 
-		if ( $cache === false || ( isset( $cache['plugins'], $cache['count'] ) && count( $cache['plugins'] ) !== $cache['count'] ) ) {
+		if ( ! is_array( $cache ) || ! isset( $cache['plugins'], $cache['count'] ) ) {
 			$this->update_cache();
 			return;
 		}
 
 		$this->cache = $cache;
+	}
+
+	/**
+	 * Get the number of plugin directories in mu-plugins.
+	 *
+	 * @return int
+	 */
+	private function get_mu_plugin_count(): int {
+		return count( glob( WPMU_PLUGIN_DIR . '/*/', GLOB_ONLYDIR | GLOB_NOSORT ) );
 	}
 
 	/**
@@ -159,9 +165,10 @@ class MUPlugins {
 		$plugins            = array_diff_key( $this->auto_plugins, $this->mu_plugins );
 		$rebuild            = ! isset( $this->cache['plugins'] );
 		$this->activated    = $rebuild ? $plugins : array_diff_key( $plugins, $this->cache['plugins'] );
+		$this->count        = $this->get_mu_plugin_count();
 		$this->cache        = [
 			'plugins' => $plugins,
-			'count'   => $this->count_plugins(),
+			'count'   => $this->count,
 		];
 
 		update_site_option( 'nebula_autoloader', $this->cache );
@@ -173,7 +180,7 @@ class MUPlugins {
 	 * to deactivate or uninstall.
 	 */
 	public function plugin_hooks() {
-		if ( ! is_array( $this->activated ) ) {
+		if ( empty( $this->activated ) ) {
 			return;
 		}
 
@@ -203,14 +210,13 @@ class MUPlugins {
 	 * @return int Number of autoloaded plugins.
 	 */
 	private function count_plugins() {
-		if ( isset( $this->count ) ) {
+		if ( $this->count !== null ) {
 			return $this->count;
 		}
 
-		$count = count( glob( WPMU_PLUGIN_DIR . '/*/', GLOB_ONLYDIR | GLOB_NOSORT ) );
+		$this->count = $this->get_mu_plugin_count();
 
-		if ( ! isset( $this->cache['count'] ) || $count !== $this->cache['count'] ) {
-			$this->count = $count;
+		if ( ! isset( $this->cache['count'] ) || $this->count !== $this->cache['count'] ) {
 			$this->update_cache();
 		}
 
