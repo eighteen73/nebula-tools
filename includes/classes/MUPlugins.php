@@ -89,7 +89,7 @@ class MUPlugins {
 	public function load_plugins() {
 		$this->check_cache();
 		$this->validate_plugins();
-		$this->count_plugins();
+		$this->get_plugin_count();
 
 		foreach ( array_keys( $this->cache['plugins'] ) as $plugin_file ) {
 			include_once WPMU_PLUGIN_DIR . '/' . $plugin_file;
@@ -144,11 +144,11 @@ class MUPlugins {
 	}
 
 	/**
-	 * Get the number of plugin directories in mu-plugins.
+	 * Get the number of plugin directories in mu-plugins directly from the filesystem.
 	 *
 	 * @return int
 	 */
-	private function get_mu_plugin_count(): int {
+	private function count_plugins_on_disk(): int {
 		return count( glob( WPMU_PLUGIN_DIR . '/*/', GLOB_ONLYDIR | GLOB_NOSORT ) );
 	}
 
@@ -165,7 +165,7 @@ class MUPlugins {
 		$plugins            = array_diff_key( $this->auto_plugins, $this->mu_plugins );
 		$rebuild            = ! isset( $this->cache['plugins'] );
 		$this->activated    = $rebuild ? $plugins : array_diff_key( $plugins, $this->cache['plugins'] );
-		$this->count        = $this->get_mu_plugin_count();
+		$this->count        = $this->count_plugins_on_disk();
 		$this->cache        = [
 			'plugins' => $plugins,
 			'count'   => $this->count,
@@ -202,19 +202,16 @@ class MUPlugins {
 	}
 
 	/**
-	 * Count the number of autoloaded plugins.
-	 *
-	 * Count our plugins (but only once) by counting the top level folders in the
-	 * mu-plugins dir. If it's more or less than last time, update the cache.
+	 * Get the number of autoloaded plugins, validating against the cache if necessary.
 	 *
 	 * @return int Number of autoloaded plugins.
 	 */
-	private function count_plugins() {
+	private function get_plugin_count() {
 		if ( $this->count !== null ) {
 			return $this->count;
 		}
 
-		$this->count = $this->get_mu_plugin_count();
+		$this->count = $this->count_plugins_on_disk();
 
 		if ( ! isset( $this->cache['count'] ) || $this->count !== $this->cache['count'] ) {
 			$this->update_cache();
