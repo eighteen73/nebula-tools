@@ -131,7 +131,7 @@ class MUPlugins {
 	/**
 	 * Run some checks then autoload our plugins.
 	 */
-	public function load_plugins() {
+	public function load_plugins(): void {
 		$this->check_cache();
 		$this->validate_plugins();
 		$this->get_plugin_count();
@@ -151,7 +151,7 @@ class MUPlugins {
 	 *
 	 * @param bool   $show Whether to show the advanced plugins for the specified plugin type
 	 * @param string $type The plugin type, i.e., `mustuse` or `dropins`
-	 * @return false|mixed
+	 * @return bool|mixed
 	 * {@internal We add the plugin details ourselves, so we return false to disable the filter.}
 	 */
 	public function show_in_admin( $show, $type ) {
@@ -183,7 +183,7 @@ class MUPlugins {
 	/**
 	 * This sets the cache or calls for an update
 	 */
-	private function check_cache() {
+	private function check_cache(): void {
 		$cache = get_site_option( 'nebula_autoloader' );
 
 		if ( ! is_array( $cache ) || ! isset( $cache['plugins'], $cache['count'] ) ) {
@@ -205,7 +205,7 @@ class MUPlugins {
 	 * @return int
 	 */
 	private function count_plugins_on_disk(): int {
-		return count( glob( WPMU_PLUGIN_DIR . '/*/', GLOB_ONLYDIR | GLOB_NOSORT ) );
+		return count( glob( WPMU_PLUGIN_DIR . '/*/', GLOB_ONLYDIR | GLOB_NOSORT ) ) ?: 0;
 	}
 
 	/**
@@ -213,7 +213,7 @@ class MUPlugins {
 	 * Check cache against current plugins for newly activated plugins.
 	 * After that, we can update the cache.
 	 */
-	private function update_cache() {
+	private function update_cache(): void {
 		require_once ABSPATH . 'wp-admin/includes/plugin.php';
 
 		$auto_plugins     = get_plugins( $this->relative_path );
@@ -232,7 +232,7 @@ class MUPlugins {
 
 		update_site_option( 'nebula_autoloader', $this->cache );
 
-		if ( $this->is_proxy_mode ) {
+		if ( $this->is_proxy_mode && is_writable( WPMU_PLUGIN_DIR ) ) {
 			$this->sync_proxies();
 		}
 	}
@@ -240,7 +240,7 @@ class MUPlugins {
 	/**
 	 * Synchronise proxy files in the mu-plugins directory.
 	 */
-	private function sync_proxies() {
+	private function sync_proxies(): void {
 		$existing_proxies = glob( WPMU_PLUGIN_DIR . '/_autoload-*.php' );
 		$current_proxies  = [];
 
@@ -270,14 +270,19 @@ class MUPlugins {
 	 * @param string $proxy_path Absolute path to the proxy file.
 	 * @param string $plugin_rel Relative path to the actual plugin file from mu-plugins.
 	 */
-	private function write_proxy( string $proxy_path, string $plugin_rel ) {
+	private function write_proxy( string $proxy_path, string $plugin_rel ): void {
 		$source_path = WPMU_PLUGIN_DIR . '/' . $plugin_rel;
 		$header      = '';
 
 		if ( file_exists( $source_path ) ) {
 			$content = file_get_contents( $source_path, false, null, 0, 8192 );
-			if ( preg_match( '/\/\*\*.*?\*\//s', $content, $matches ) ) {
-				$header = $matches[0];
+			if ( preg_match_all( '/\/\*.*?\*\//s', $content, $matches ) ) {
+				foreach ( $matches[0] as $comment ) {
+					if ( strpos( $comment, 'Plugin Name:' ) !== false ) {
+						$header = $comment;
+						break;
+					}
+				}
 			}
 		}
 
@@ -288,7 +293,7 @@ class MUPlugins {
 	/**
 	 * Ensure the .gitignore file exists and ignores our generated proxies.
 	 */
-	private function ensure_gitignore() {
+	private function ensure_gitignore(): void {
 		$gitignore_path = WPMU_PLUGIN_DIR . '/.gitignore';
 		$pattern        = '_autoload-*.php';
 		$content        = file_exists( $gitignore_path ) ? file_get_contents( $gitignore_path ) : '';
@@ -304,7 +309,7 @@ class MUPlugins {
 	 * loaded as usual. Plugins are removed by deletion, so there's no way
 	 * to deactivate or uninstall.
 	 */
-	public function plugin_hooks() {
+	public function plugin_hooks(): void {
 		if ( empty( $this->activated ) ) {
 			return;
 		}
@@ -317,7 +322,7 @@ class MUPlugins {
 	/**
 	 * Check that the plugin file exists, if it doesn't update the cache.
 	 */
-	private function validate_plugins() {
+	private function validate_plugins(): void {
 		foreach ( $this->cache['plugins'] as $plugin_file => $plugin_info ) {
 			if ( ! file_exists( WPMU_PLUGIN_DIR . '/' . $plugin_file ) ) {
 				$this->update_cache();
@@ -331,7 +336,7 @@ class MUPlugins {
 	 *
 	 * @return int Number of autoloaded plugins.
 	 */
-	private function get_plugin_count() {
+	private function get_plugin_count(): int {
 		if ( $this->count !== null ) {
 			return $this->count;
 		}
